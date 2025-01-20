@@ -4,34 +4,27 @@
 For further reference, please consider the following sections:
 
 * [Official Apache Maven documentation](https://maven.apache.org/guides/index.html)
-* [Spring Boot Maven Plugin Reference Guide](https://docs.spring.io/spring-boot/docs/3.3.0/maven-plugin/reference/html/)
-* [Create an OCI image](https://docs.spring.io/spring-boot/docs/3.3.0/maven-plugin/reference/html/#build-image)
-* [GraalVM Native Image Support](https://docs.spring.io/spring-boot/docs/3.3.0/reference/html/native-image.html#native-image)
-* [Docker Compose Support](https://docs.spring.io/spring-boot/docs/3.3.0/reference/htmlsingle/index.html#features.docker-compose)
-* [Spring Data JDBC](https://docs.spring.io/spring-boot/docs/3.3.0/reference/htmlsingle/index.html#data.sql.jdbc)
-* [Spring Web](https://docs.spring.io/spring-boot/docs/3.3.0/reference/htmlsingle/index.html#web)
-* [OpenAI](https://docs.spring.io/spring-ai/reference/api/clients/openai-chat.html)
+* [Spring Boot Maven Plugin Reference Guide](https://docs.spring.io/spring-boot/3.4.1/maven-plugin)
+* [Create an OCI image](https://docs.spring.io/spring-boot/3.4.1/maven-plugin/build-image.html)
+* [GraalVM Native Image Support](https://docs.spring.io/spring-boot/3.4.1/reference/packaging/native-image/introducing-graalvm-native-images.html)
+* [Spring Modulith](https://docs.spring.io/spring-modulith/reference/)
+* [Spring Web](https://docs.spring.io/spring-boot/3.4.1/reference/web/servlet.html)
+* [PGvector Vector Database](https://docs.spring.io/spring-ai/reference/api/vectordbs/pgvector.html)
+* [OpenAI](https://docs.spring.io/spring-ai/reference/api/chat/openai-chat.html)
+* [Spring Data JDBC](https://docs.spring.io/spring-boot/3.4.1/reference/data/sql.html#data.sql.jdbc)
 
 ### Guides
 The following guides illustrate how to use some features concretely:
 
-* [Using Spring Data JDBC](https://github.com/spring-projects/spring-data-examples/tree/master/jdbc/basics)
 * [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
 * [Serving Web Content with Spring MVC](https://spring.io/guides/gs/serving-web-content/)
 * [Building REST services with Spring](https://spring.io/guides/tutorials/rest/)
+* [Using Spring Data JDBC](https://github.com/spring-projects/spring-data-examples/tree/master/jdbc/basics)
 
 ### Additional Links
 These additional references should also help you:
 
-* [Configure AOT settings in Build Plugin](https://docs.spring.io/spring-boot/docs/3.3.0/maven-plugin/reference/htmlsingle/#aot)
-
-### Docker Compose support
-This project contains a Docker Compose file named `compose.yaml`.
-In this file, the following services have been defined:
-
-* postgres: [`postgres:latest`](https://hub.docker.com/_/postgres)
-
-Please review the tags of the used images and set them to the same as you're running in production.
+* [Configure AOT settings in Build Plugin](https://docs.spring.io/spring-boot/3.4.1/how-to/aot.html)
 
 ## GraalVM Native Support
 
@@ -79,4 +72,12 @@ To run your existing tests in a native image, run the following goal:
 ```
 $ ./mvnw test -PnativeTest
 ```
+
+
+### Maven Parent overrides
+
+Due to Maven's design, elements are inherited from the parent POM to the project POM.
+While most of the inheritance is fine, it also inherits unwanted elements like `<license>` and `<developers>` from the parent.
+To prevent this, the project POM contains empty overrides for these elements.
+If you manually switch to a different parent and actually want the inheritance, you need to remove those overrides.
 

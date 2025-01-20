@@ -1,35 +1,53 @@
 package com.example.service.adoptions;
 
+import com.example.service.adoptions.validations.Validation;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.repository.ListCrudRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 
 @Controller
 @ResponseBody
 @Transactional
-@RequestMapping("/adoptions")
+@RequestMapping("/dogs/adoptions")
 class AdoptionController {
 
-	private final DogRepository repository;
+    private final DogRepository repository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
-	private final ApplicationEventPublisher publisher;
+    AdoptionController(DogRepository repository,
+                       Validation validation,
+                       ApplicationEventPublisher applicationEventPublisher) {
+        this.repository = repository;
+        this.applicationEventPublisher = applicationEventPublisher;
+    }
 
-	AdoptionController(DogRepository repository, ApplicationEventPublisher publisher) {
-		this.repository = repository;
-		this.publisher = publisher;
-	}
+    @PostMapping("/{id}")
+    void adopt(@PathVariable Integer id, @RequestParam String name) {
+        this.repository.findById(id).ifPresent(dog -> {
+            var saved = this.repository.save(new Dog(id, dog.name(), name,
+                    dog.description()));
+            System.out.println("saved [" + saved + "]");
+            this.applicationEventPublisher.publishEvent(new DogAdoptionEvent(id));
+        });
 
-	@PostMapping("/{id}")
-	void adopt(@PathVariable Integer id, @RequestBody Map<String, String> owner) {
-		this.repository.findById(id).ifPresent(dog -> {
-			var saved = this.repository.save(new Dog(id, dog.name(), dog.description(), dog.dob(), owner.get("name")));
-			this.publisher.publishEvent(new DogAdoptedEvent(dog.id(), dog.name()));
-			System.out.println("saved [" + saved + "]");
-		});
-
-	}
+    }
 
 }
+
+interface DogRepository extends ListCrudRepository<Dog, Integer> {
+}
+
+// look mom, no Lombok!!
+record Dog(@Id int id, String name, String owner, String description) {
+}
+
+// DATA ORIENTED PROGRAMMING
+// - records
+// - sealed types
+// - pattern matching
+// - smart switch expressions
+
