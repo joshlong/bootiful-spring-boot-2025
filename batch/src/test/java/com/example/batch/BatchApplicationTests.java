@@ -1,10 +1,10 @@
-package com.example.service;
+package com.example.batch;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class ServiceApplicationTests {
+class BatchApplicationTests {
 
 	@Test
 	void contextLoads() {

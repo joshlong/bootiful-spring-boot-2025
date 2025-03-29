@@ -1,12 +1,15 @@
 package com.example.service;
 
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.client.RestClient;
+import org.springframework.stereotype.Component;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 @SpringBootApplication
 public class ServiceApplication {
@@ -16,29 +19,24 @@ public class ServiceApplication {
     }
 
     @Bean
-    RestClient restClient(RestClient.Builder builder) {
-        return builder.build();
+    MethodToolCallbackProvider methodToolCallbackProvider(DogAdoptionScheduler scheduler) {
+        return MethodToolCallbackProvider
+                .builder()
+                .toolObjects(scheduler)
+                .build();
     }
 }
 
-// cora iberkleid 
-@Controller
-@ResponseBody
-class CoraController {
 
-    private final RestClient http;
+@Component
+class DogAdoptionScheduler {
 
-    CoraController(RestClient http) {
-        this.http = http;
+    @Tool(description = "Schedule an appointment to  pickup or adopt a dog at a given Pooch Palace location")
+    String scheduleDogForPickup(@ToolParam(description = "the id of the dog") int dogId,
+                                @ToolParam(description = "the name of the dog") String dogName) {
+
+        System.out.println("scheduled " + dogId + " " + dogName + " for pickup");
+        return Instant.now().plus(3, ChronoUnit.DAYS)
+                .toString();
     }
-
-    @GetMapping("/delay")
-    String delay() {
-        return this.http
-                .get() 
-                .uri("https://httpbin.org/delay/5")
-                .retrieve()
-                .body(String.class);
-    }
-
 }
