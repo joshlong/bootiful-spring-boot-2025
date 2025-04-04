@@ -16,47 +16,43 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collection;
 
 
-
-
-
 @Service
-@Transactional
-class DogAdoptionsGrpcService extends AdoptionsGrpc.AdoptionsImplBase {
+class DogAdoptionGrpcService
+        extends AdoptionsGrpc.AdoptionsImplBase {
 
     private final DogAdoptionService dogAdoptionService;
 
-    DogAdoptionsGrpcService(DogAdoptionService dogAdoptionService) {
+    DogAdoptionGrpcService(DogAdoptionService dogAdoptionService) {
         this.dogAdoptionService = dogAdoptionService;
     }
 
     @Override
-    public void all(Empty request,
-            StreamObserver<com.example.adoptions.adoptions.grpc.Dogs> responseObserver) {
+    public void all(Empty request, StreamObserver<Dogs> responseObserver) {
+
 
         var all = this.dogAdoptionService
                 .all()
                 .stream()
-                .map(ourDog -> com.example.adoptions.adoptions.grpc.Dog.newBuilder()
+                .map( ourDog -> com.example.adoptions.adoptions.grpc.Dog.newBuilder()
                         .setId(ourDog.id())
                         .setName(ourDog.name())
                         .setDescription(ourDog.description())
                         .build())
                 .toList();
 
-        responseObserver.onNext(Dogs.newBuilder().addAllDogs(all ).build());
+        responseObserver.onNext(Dogs.newBuilder().addAllDogs(all).build());
         responseObserver.onCompleted();
-
 
     }
 }
 
 
 @Controller
-class DogAdoptionGraphqlController {
+class DogAdoptionsGraphqlController {
 
     private final DogAdoptionService dogAdoptionService;
 
-    DogAdoptionGraphqlController(DogAdoptionService dogAdoptionService) {
+    DogAdoptionsGraphqlController(DogAdoptionService dogAdoptionService) {
         this.dogAdoptionService = dogAdoptionService;
     }
 
@@ -66,60 +62,58 @@ class DogAdoptionGraphqlController {
     }
 }
 
-
 @Controller
 @ResponseBody
-class DogAdoptionHttpController {
+class DogAdoptionController {
 
-    private final DogAdoptionService service;
+    private final DogAdoptionService dogAdoptionService;
 
-    DogAdoptionHttpController(DogAdoptionService service) {
-        this.service = service;
+    DogAdoptionController(DogAdoptionService dogAdoptionService) {
+        this.dogAdoptionService = dogAdoptionService;
     }
 
     @GetMapping("/dogs")
     Collection<Dog> all() {
-        return this.service.all();
+        return dogAdoptionService.all();
     }
 
     @PostMapping("/dogs/{dogId}/adoptions")
     void adopt(@PathVariable int dogId, @RequestParam String owner) {
-        this.service.adopt(dogId, owner);
+        dogAdoptionService.adopt(dogId, owner);
     }
 }
 
-
-@Transactional
 @Service
+@Transactional
 class DogAdoptionService {
 
-    private final DogRepository dogRepository;
+    private final DogRepository repository;
     private final ApplicationEventPublisher applicationEventPublisher;
 
-    public DogAdoptionService(DogRepository dogRepository, ApplicationEventPublisher applicationEventPublisher) {
-        this.dogRepository = dogRepository;
+    DogAdoptionService(DogRepository repository, ApplicationEventPublisher applicationEventPublisher) {
+        this.repository = repository;
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
-    Collection<Dog> all() {
-        return dogRepository.findAll();
-    }
-
-
     void adopt(int dogId, String owner) {
-
-        dogRepository.findById(dogId).ifPresent(dog -> {
-            var updated = dogRepository.save(
-                    new Dog(dog.id(), dog.name(), owner, dog.description()));
+        this.repository.findById(dogId).ifPresent(dog -> {
+            var updated = this.repository.save(new Dog(dog.id(), dog.name(), owner, dog.description()));
             System.out.println("adopted [" + updated + "]");
             applicationEventPublisher.publishEvent(new DogAdoptionEvent(dogId));
-        });
 
+        });
+    }
+
+    Collection<Dog> all() {
+        return repository.findAll();
     }
 }
 
-interface DogRepository extends ListCrudRepository<Dog, Integer> {
+
+// look mom,no Lombok!!
+record Dog(@Id int id, String name, String owner, String description) {
 }
 
-record Dog(@Id int id, String name, String owner, String description) {
+
+interface DogRepository extends ListCrudRepository<Dog, Integer> {
 }

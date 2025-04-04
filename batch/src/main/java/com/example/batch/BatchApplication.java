@@ -26,30 +26,32 @@ public class BatchApplication {
         SpringApplication.run(BatchApplication.class, args);
     }
 
+    // jobs -> 0-N steps (readers,processors,writers)
 
-    record Dog(int id, String name, String description, String owner) {
+    record Dog(int id, String name, String owner, String description) {
     }
 
     @Bean
-    FlatFileItemReader<Dog> flatFileItemReader(@Value("file://${HOME}/Desktop/talk/dogs.csv") Resource resource) {
+    FlatFileItemReader<Dog> reader(@Value("file://${HOME}/Desktop/talk/dogs.csv") Resource resource) {
         return new FlatFileItemReaderBuilder<Dog>()
-                .linesToSkip(1)
-                .resource(resource)
                 .name("dogReader")
+                .resource(resource)
                 .delimited().names("id,name,description,dob,owner,gender,image".split(","))
+                .linesToSkip(1)
                 .fieldSetMapper(fieldSet -> new Dog(fieldSet.readInt("id"),
                         fieldSet.readString("name"),
-                        fieldSet.readString("description"),
-                        fieldSet.readString("owner")
+                        fieldSet.readString("owner"),
+                        fieldSet.readString("description")
                 ))
                 .build();
     }
 
-
     @Bean
-    JdbcBatchItemWriter<Dog> jdbcBatchItemWriter(DataSource dataSource) {
+    JdbcBatchItemWriter<Dog> writer(DataSource dataSource) {
         return new JdbcBatchItemWriterBuilder<Dog>()
+
                 .dataSource(dataSource)
+                .sql("INSERT INTO DOG (ID, NAME, DESCRIPTION, OWNER) VALUES ( ?,?,?,? )")
                 .assertUpdates(true)
                 .itemPreparedStatementSetter((item, ps) -> {
                     ps.setInt(1, item.id());
@@ -57,18 +59,17 @@ public class BatchApplication {
                     ps.setString(3, item.description());
                     ps.setString(4, item.owner());
                 })
-                .sql("insert into dog (id, name, description, owner) values ( ?,?,?,? ) ")
                 .build();
     }
 
     @Bean
     Step step(JobRepository repository, PlatformTransactionManager tx,
-              FlatFileItemReader<Dog> flatFileItemReader,
-              JdbcBatchItemWriter<Dog> jdbcBatchItemWriter) {
+              FlatFileItemReader<Dog> reader,
+              JdbcBatchItemWriter<Dog> writer) {
         return new StepBuilder("step", repository)
                 .<Dog, Dog>chunk(10, tx)
-                .reader(flatFileItemReader)
-                .writer(jdbcBatchItemWriter)
+                .reader(reader)
+                .writer(writer)
                 .build();
     }
 

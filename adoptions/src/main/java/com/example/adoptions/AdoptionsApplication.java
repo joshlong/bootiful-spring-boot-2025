@@ -16,7 +16,6 @@ public class AdoptionsApplication {
         SpringApplication.run(AdoptionsApplication.class, args);
     }
 
-
 }
 
 @Controller

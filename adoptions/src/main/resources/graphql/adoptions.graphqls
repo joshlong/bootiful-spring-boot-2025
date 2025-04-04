@@ -1,10 +1,15 @@
-type Dog  {
+type Dog {
     id: Int
     name:String
-    owner:String
     description:String
+    owner:String
 }
 
+
+
 type Query {
+
     all : [Dog]
+
+
 }
