@@ -1,5 +1,6 @@
 package com.example.adoptions;
 
+import com.fasterxml.jackson.module.jsonSchema.types.ObjectSchema;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.modulith.core.ApplicationModules;
@@ -10,9 +11,8 @@ class AdoptionsApplicationTests {
 
 	@Test
 	void contextLoads() {
-
-		var am = ApplicationModules.of(AdoptionsApplication.class);
-		am.verify() ;
+		var am = ApplicationModules.of (AdoptionsApplication.class);
+		am .verify() ;
 
 		System.out.println(am);
 

@@ -11,37 +11,41 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
 
+
+
+
+
 @Service
-class DogAdoptionGrpcService extends AdoptionsGrpc.AdoptionsImplBase {
+@Transactional
+class DogAdoptionsGrpcService extends AdoptionsGrpc.AdoptionsImplBase {
 
-    private final DogRepository repository;
+    private final DogAdoptionService dogAdoptionService;
 
-    DogAdoptionGrpcService(DogRepository repository) {
-        this.repository = repository;
+    DogAdoptionsGrpcService(DogAdoptionService dogAdoptionService) {
+        this.dogAdoptionService = dogAdoptionService;
     }
 
     @Override
-    public void all(Empty request, StreamObserver<Dogs> responseObserver) {
+    public void all(Empty request,
+            StreamObserver<com.example.adoptions.adoptions.grpc.Dogs> responseObserver) {
 
-        var all = this.repository.findAll()
+        var all = this.dogAdoptionService
+                .all()
                 .stream()
-                .map(ourDogs -> com.example.adoptions.adoptions.grpc.Dog.newBuilder()
-                        .setId(ourDogs.id())
-                        .setName(ourDogs.name())
-                        .setDescription(ourDogs.description())
+                .map(ourDog -> com.example.adoptions.adoptions.grpc.Dog.newBuilder()
+                        .setId(ourDog.id())
+                        .setName(ourDog.name())
+                        .setDescription(ourDog.description())
                         .build())
                 .toList();
 
-
-        responseObserver.onNext(Dogs.newBuilder().addAllDogs(all).build());
+        responseObserver.onNext(Dogs.newBuilder().addAllDogs(all ).build());
         responseObserver.onCompleted();
+
 
     }
 }
@@ -50,15 +54,15 @@ class DogAdoptionGrpcService extends AdoptionsGrpc.AdoptionsImplBase {
 @Controller
 class DogAdoptionGraphqlController {
 
-    private final DogRepository repository;
+    private final DogAdoptionService dogAdoptionService;
 
-    DogAdoptionGraphqlController(DogRepository repository) {
-        this.repository = repository;
+    DogAdoptionGraphqlController(DogAdoptionService dogAdoptionService) {
+        this.dogAdoptionService = dogAdoptionService;
     }
 
     @QueryMapping
-    Collection<Dog> dogs() {
-        return repository.findAll();
+    Collection<Dog> all() {
+        return dogAdoptionService.all();
     }
 }
 
@@ -67,41 +71,49 @@ class DogAdoptionGraphqlController {
 @ResponseBody
 class DogAdoptionHttpController {
 
-    private final DogAdoptionService dogAdoptionService;
+    private final DogAdoptionService service;
 
-    DogAdoptionHttpController(DogAdoptionService dogAdoptionService) {
-        this.dogAdoptionService = dogAdoptionService;
+    DogAdoptionHttpController(DogAdoptionService service) {
+        this.service = service;
+    }
+
+    @GetMapping("/dogs")
+    Collection<Dog> all() {
+        return this.service.all();
     }
 
     @PostMapping("/dogs/{dogId}/adoptions")
     void adopt(@PathVariable int dogId, @RequestParam String owner) {
-        this.dogAdoptionService.adopt(dogId, owner);
+        this.service.adopt(dogId, owner);
     }
 }
 
-@Controller
+
 @Transactional
+@Service
 class DogAdoptionService {
 
     private final DogRepository dogRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
 
-    DogAdoptionService(DogRepository dogRepository, ApplicationEventPublisher applicationEventPublisher) {
+    public DogAdoptionService(DogRepository dogRepository, ApplicationEventPublisher applicationEventPublisher) {
         this.dogRepository = dogRepository;
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
+    Collection<Dog> all() {
+        return dogRepository.findAll();
+    }
+
+
     void adopt(int dogId, String owner) {
 
-        this.dogRepository
-                .findById(dogId)
-                .ifPresent(dog -> {
-                    var up = this.dogRepository.save(new Dog(dog.id(), dog.name(), dog.description(), owner));
-                    System.out.println("updated " + up);
-                    this.applicationEventPublisher.publishEvent(
-                            new DogAdoptionEvent(dogId));
-                });
-
+        dogRepository.findById(dogId).ifPresent(dog -> {
+            var updated = dogRepository.save(
+                    new Dog(dog.id(), dog.name(), owner, dog.description()));
+            System.out.println("adopted [" + updated + "]");
+            applicationEventPublisher.publishEvent(new DogAdoptionEvent(dogId));
+        });
 
     }
 }
@@ -109,5 +121,5 @@ class DogAdoptionService {
 interface DogRepository extends ListCrudRepository<Dog, Integer> {
 }
 
-record Dog(@Id int id, String name, String description, String owner) {
+record Dog(@Id int id, String name, String owner, String description) {
 }
